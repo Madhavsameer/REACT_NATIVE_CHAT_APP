@@ -14,6 +14,7 @@ const PrivateChatScreen = () => {
     const [messages, setMessages] = useState([]); // Store all messages
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [recipient, setRecipient] = useState(null); // State to keep track of selected recipient
     const navigation = useNavigation(); // Get navigation object
 
     useEffect(() => {
@@ -52,8 +53,8 @@ const PrivateChatScreen = () => {
     }, []);
 
     const sendPrivateMessage = () => {
-        if (message) {
-            socket.emit('private message', { username, message, recipient: username });
+        if (message && recipient) {
+            socket.emit('private message', { username, message, recipient });
             setMessage(''); // Clear the input field after sending the message
         }
     };
@@ -91,6 +92,7 @@ const PrivateChatScreen = () => {
                         <Text
                             style={styles.userListLi}
                             onPress={() => {
+                                setRecipient(item.username); // Set selected recipient
                                 // Navigate to ChatHistoryScreen with messages and recipient as parameters
                                 navigation.navigate('ChatHistory', {
                                     messages: getChatHistoryForRecipient(item.username), // Pass filtered chat history
@@ -105,8 +107,18 @@ const PrivateChatScreen = () => {
             </View>
 
             {/* Message Input Section */}
-            
-
+            {recipient && ( // Only show input when a recipient is selected
+                <View style={styles.messageContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Type a private message..."
+                        value={message}
+                        onChangeText={setMessage}
+                        onSubmitEditing={sendPrivateMessage}  // Send message on pressing Enter
+                    />
+                    <Button title="Send Private" onPress={sendPrivateMessage} />
+                </View>
+            )}
         </View>
     );
 };

@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios'; // Import axios for making HTTP requests
+import axios from 'axios';
 
-const RegisterScreen = ({ navigation }) => {
+const RegisterScreen = ({ navigation, setIsLoggedIn }) => {
     const [username, setUsername] = useState('');
 
     const registerUser = async () => {
-        // Validate input
         if (!username.trim()) {
             Alert.alert('Error', 'Please enter a username.');
             return;
         }
 
         try {
-            // Store username in AsyncStorage
             await AsyncStorage.setItem('username', username);
-
-            // Save username to the database
             await axios.post('https://react-native-chat-app.onrender.com/users/register', { username });
 
             Alert.alert('Success', 'Registration successful!');
+
+            // Call the function to set isLoggedIn to true
+            setIsLoggedIn(true);
             navigation.replace('Home'); // Navigate to Home screen
         } catch (error) {
             console.error('Error registering user:', error);
@@ -36,7 +35,7 @@ const RegisterScreen = ({ navigation }) => {
                 placeholder="Enter your username"
                 value={username}
                 onChangeText={setUsername}
-                autoCapitalize="none"  // Optional: prevent auto-capitalization
+                autoCapitalize="none"
             />
             <Button title="Register" onPress={registerUser} />
         </View>

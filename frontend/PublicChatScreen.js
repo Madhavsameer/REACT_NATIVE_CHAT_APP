@@ -37,6 +37,18 @@ const PublicChatScreen = () => {
             })
             .catch(error => console.error('Error fetching users:', error));
 
+        // Fetch all public messages when the component mounts
+        const fetchPublicMessages = async () => {
+            try {
+                const response = await axios.get('https://react-native-chat-app.onrender.com/messages/public');
+                setMessages(response.data);
+            } catch (error) {
+                console.error('Error fetching public messages:', error);
+            }
+        };
+
+        fetchPublicMessages(); // Fetch public messages
+
         // Listen for public messages
         socket.on('public message', (newMessage) => {
             setMessages((prevMessages) => [...prevMessages, newMessage]);

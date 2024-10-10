@@ -71,6 +71,16 @@ app.get('/messages/private/:username/:recipient', async (req, res) => {
     }
 });
 
+// API to get all public messages
+app.get('/messages/public', async (req, res) => {
+    try {
+        const publicMessages = await Message.find({ recipient: 'all' }).sort({ timestamp: 1 });
+        res.json(publicMessages);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch public messages' });
+    }
+});
+
 // Socket.io for messaging
 io.on('connection', (socket) => {
     console.log('A user connected');

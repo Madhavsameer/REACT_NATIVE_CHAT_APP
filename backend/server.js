@@ -26,7 +26,7 @@ const User = mongoose.model('User', userSchema);
 
 // Message Schema
 const messageSchema = new mongoose.Schema({
-    username: { type: String, required: true },  // Sender
+    username: { type: String, required: true }, // Sender
     message: { type: String, required: true },
     recipient: { type: String, default: 'all' }, // 'all' for public, username for private
     timestamp: { type: Date, default: Date.now },
@@ -52,16 +52,6 @@ app.get('/users', async (req, res) => {
         res.json(users);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch users' });
-    }
-});
-
-// API to get all public messages
-app.get('/messages/public', async (req, res) => {
-    try {
-        const publicMessages = await Message.find({ recipient: 'all' }).sort({ timestamp: 1 });
-        res.json(publicMessages);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch public messages' });
     }
 });
 
@@ -93,31 +83,35 @@ io.on('connection', (socket) => {
     });
 
     // Listen for public messages
-    socket.on('public message', (message) => {
-        const newMessage = new Message({
-            username: socket.username,
-            message,
-            recipient: 'all'
-        });
-        newMessage.save()
-            .then(() => {
-                io.emit('public message', newMessage); // Emit to all users
-            })
-            .catch(err => console.error('Failed to send public message', err));
+    socket.on('public message', async (data) => {
+        const { username, message } = data;
+        if (!username || !message) {
+            return console.error('Username and message are required');
+        }
+
+        try {
+            const newMessage = new Message({ username, message });
+            await newMessage.save();
+            io.emit('public message', newMessage); // Emit to all clients
+        } catch (error) {
+            console.error('Failed to send public message', error);
+        }
     });
 
     // Listen for private messages
-    socket.on('private message', ({ message, to }) => {
-        const newMessage = new Message({
-            username: socket.username,
-            message,
-            recipient: to
-        });
-        newMessage.save()
-            .then(() => {
-                socket.to(to).emit('private message', newMessage); // Emit to specific recipient
-            })
-            .catch(err => console.error('Failed to send private message', err));
+    socket.on('private message', async (data) => {
+        const { username, message, recipient } = data;
+        if (!username || !message || !recipient) {
+            return console.error('Username, message, and recipient are required');
+        }
+
+        try {
+            const privateMessage = new Message({ username, message, recipient });
+            await privateMessage.save();
+            socket.to(recipient).emit('private message', privateMessage); // Emit to specific recipient
+        } catch (error) {
+            console.error('Failed to send private message', error);
+        }
     });
 
     socket.on('disconnect', () => {
@@ -125,7 +119,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server
 server.listen(5000, () => {
     console.log('Server is running on port 5000');
 });

@@ -13,7 +13,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost/chat-app', {
+mongoose.connect('mongodb+srv://madhav:srpan@madhav.maixxih.mongodb.net/chat', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 });

@@ -55,6 +55,16 @@ app.get('/users', async (req, res) => {
     }
 });
 
+// API to get all public messages
+app.get('/messages/public', async (req, res) => {
+    try {
+        const publicMessages = await Message.find({ recipient: 'all' }).sort({ timestamp: 1 });
+        res.json(publicMessages);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch public messages' });
+    }
+});
+
 // API to get private messages between two users
 app.get('/messages/private/:username/:recipient', async (req, res) => {
     const { username, recipient } = req.params;
@@ -82,6 +92,20 @@ io.on('connection', (socket) => {
         console.log(`${username} joined the chat`);
     });
 
+    // Listen for public messages
+    socket.on('public message', (message) => {
+        const newMessage = new Message({
+            username: socket.username,
+            message,
+            recipient: 'all'
+        });
+        newMessage.save()
+            .then(() => {
+                io.emit('public message', newMessage); // Emit to all users
+            })
+            .catch(err => console.error('Failed to send public message', err));
+    });
+
     // Listen for private messages
     socket.on('private message', ({ message, to }) => {
         const newMessage = new Message({
@@ -101,6 +125,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// Start the server
 server.listen(5000, () => {
     console.log('Server is running on port 5000');
 });

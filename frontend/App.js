@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 
-const API_BASE_URL = ''; // Replace with your backend URL
+const API_BASE_URL = 'https://react-native-chat-app.onrender.com'; // Replace with your backend URL
 
 const App = () => {
   const [username, setUsername] = useState('');

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
@@ -11,10 +11,9 @@ const PublicChatScreen = () => {
     const [username, setUsername] = useState('');
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true); // Add loading state
 
     useEffect(() => {
-        // Retrieve username from AsyncStorage when the component mounts
         const fetchUsername = async () => {
             try {
                 const storedUsername = await AsyncStorage.getItem('username');
@@ -30,13 +29,6 @@ const PublicChatScreen = () => {
 
         fetchUsername(); // Fetch username
 
-        // Fetch all registered users when the component mounts
-        axios.get('https://react-native-chat-app.onrender.com/users')
-            .then(response => {
-                setUsers(response.data);
-            })
-            .catch(error => console.error('Error fetching users:', error));
-
         // Fetch all public messages when the component mounts
         const fetchPublicMessages = async () => {
             try {
@@ -44,6 +36,8 @@ const PublicChatScreen = () => {
                 setMessages(response.data);
             } catch (error) {
                 console.error('Error fetching public messages:', error);
+            } finally {
+                setIsLoading(false); // Stop loading indicator
             }
         };
 
@@ -62,10 +56,17 @@ const PublicChatScreen = () => {
 
     const sendPublicMessage = () => {
         if (message) {
+            // Emit the message through the socket
             socket.emit('public message', { username, message });
-            setMessage(''); // Clear the input field after sending the message
+
+            // Clear the input field after sending the message
+            setMessage(''); 
         }
     };
+
+    if (isLoading) {
+        return <ActivityIndicator size="large" color="#0000ff" />; // Show loading indicator
+    }
 
     return (
         <View style={styles.container}>
@@ -74,8 +75,29 @@ const PublicChatScreen = () => {
             {/* Display the logged-in user's username */}
             <Text style={styles.usernameDisplay}>Logged in as: {username}</Text>
 
+            {/* Messages Display Section */}
+            <View style={styles.messagesDisplay}>
+                <ScrollView style={styles.messagesList}>
+                    {messages.map((msg, index) => (
+                        <View key={index} style={styles.messageContainer}>
+                            {msg.username === username ? (
+                                <View style={styles.outgoingMessage}>
+                                    <Text style={styles.username}>{msg.username}: </Text>
+                                    <Text>{msg.message}</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.incomingMessage}>
+                                    <Text style={styles.username}>{msg.username}: </Text>
+                                    <Text>{msg.message}</Text>
+                                </View>
+                            )}
+                        </View>
+                    ))}
+                </ScrollView>
+            </View>
+
             {/* Message Input Section */}
-            <View style={styles.messageContainer}>
+            <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
                     placeholder="Type a public message..."
@@ -83,25 +105,13 @@ const PublicChatScreen = () => {
                     onChangeText={setMessage}
                     onSubmitEditing={sendPublicMessage}  // Send message on pressing Enter
                 />
-                <Button title="Send Public" onPress={sendPublicMessage} />
-            </View>
-
-            {/* Messages Display Section */}
-            <View style={styles.messagesDisplay}>
-                <Text style={styles.header}>Messages</Text>
-                <ScrollView style={styles.messagesList}>
-                    {messages.map((msg, index) => (
-                        <Text key={index} style={styles.message}>
-                            <Text style={styles.username}>{msg.username}: </Text>{msg.message}
-                        </Text>
-                    ))}
-                </ScrollView>
+                <Button title="Send Public" onPress={sendPublicMessage} disabled={!message} />
             </View>
         </View>
     );
 };
 
-// Styles for the PublicChatScreen component
+// Combined styles for the PublicChatScreen component
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -118,15 +128,18 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         color: '#555',
     },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 10,
+    },
     input: {
+        flex: 1,
         height: 40,
         borderColor: '#ccc',
         borderWidth: 1,
-        marginBottom: 10,
+        marginRight: 10,
         paddingHorizontal: 8,
-    },
-    messageContainer: {
-        marginBottom: 20,
     },
     messagesDisplay: {
         flex: 1,
@@ -139,8 +152,21 @@ const styles = StyleSheet.create({
     messagesList: {
         flexGrow: 1,
     },
-    message: {
-        marginBottom: 5,
+    messageContainer: {
+        marginBottom: 10,
+    },
+    outgoingMessage: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#d1f7c4',
+        borderRadius: 10,
+        padding: 10,
+        maxWidth: '75%',
+    },
+    incomingMessage: {
+        backgroundColor: '#f0f0f0',
+        borderRadius: 10,
+        padding: 10,
+        maxWidth: '75%',
     },
     username: {
         fontWeight: 'bold',

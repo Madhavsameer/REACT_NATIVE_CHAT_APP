@@ -8,6 +8,7 @@ import PublicChatScreen from './PublicChatScreen';
 import PrivateChatScreen from './PrivateChatScreen';
 import ChatHistoryScreen from './ChatHistoryScreen';
 
+
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -16,39 +17,32 @@ const App = () => {
     useEffect(() => {
         const checkLogin = async () => {
             const userId = await AsyncStorage.getItem('username');
-            setIsLoggedIn(!!userId); // Update state based on userId existence
+            if (userId) {
+                setIsLoggedIn(true);
+            }
         };
         checkLogin();
     }, []);
 
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('username');
-        setIsLoggedIn(false); // Update state to false on logout
-    };
-
-    const handleRegister = () => {
-        setIsLoggedIn(true); // Update state to true after registration
-    };
-
     return (
+        
         <NavigationContainer>
             <Stack.Navigator initialRouteName={isLoggedIn ? "Home" : "Register"}>
                 {!isLoggedIn ? (
                     <Stack.Screen name="Register">
-                        {props => <RegisterScreen {...props} onRegister={handleRegister} />}
+                        {(props) => <RegisterScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
                     </Stack.Screen>
                 ) : (
-                    <>
-                        <Stack.Screen name="Home">
-                            {props => <HomeScreen {...props} onLogout={handleLogout} />}
-                        </Stack.Screen>
-                        <Stack.Screen name="Public Chat" component={PublicChatScreen} />
-                        <Stack.Screen name="Private Chat" component={PrivateChatScreen} />
-                        <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} />
-                    </>
+                    <Stack.Screen name="Home">
+                        {(props) => <HomeScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+                    </Stack.Screen>
                 )}
+                <Stack.Screen name="Public Chat" component={PublicChatScreen} />
+                <Stack.Screen name="Private Chat" component={PrivateChatScreen} />
+                <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} />
             </Stack.Navigator>
         </NavigationContainer>
+        
     );
 };
 
